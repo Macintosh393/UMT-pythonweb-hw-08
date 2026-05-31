@@ -1,9 +1,13 @@
+from typing import List
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pydantic import EmailStr
 
 from src.repository.contacts import ContactRepository
 from src.schemas.contacts import ContactModel
+
+from src.utils.birthday_check import is_birthday_in_next_N_days
 
 
 class ContactService:
@@ -18,7 +22,32 @@ class ContactService:
         last_name: str | None,
         email: EmailStr | None,
     ):
-        return await self.repository.get_contacts(skip, limit)
+        contacts = await self.repository.get_contacts(skip, limit)
+
+        if first_name:
+            contacts = [
+                contact for contact in contacts if contact.first_name == first_name
+            ]
+
+        if last_name:
+            contacts = [
+                contact for contact in contacts if contact.last_name == last_name
+            ]
+
+        if email:
+            contacts = [contact for contact in contacts if contact.email == email]
+
+        return contacts
+
+    async def get_contacts_birthday_next_7_days(self, skip: int, limit: int):
+        contacts = await self.repository.get_contacts(skip, limit)
+        contacts = [
+            contact
+            for contact in contacts
+            if is_birthday_in_next_N_days(7, contact.date_of_birth)
+        ]
+
+        return contacts
 
     async def get_contact(self, contact_id: int):
         return await self.repository.get_contact_by_id(contact_id)
