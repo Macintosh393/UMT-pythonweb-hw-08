@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pydantic import EmailStr
@@ -25,8 +25,8 @@ async def get_contacts(
     db: AsyncSession = Depends(get_db)
 ):
     contact_service = ContactService(db)
-    contacts = await contact_service.get_contacts(skip, limit, first_name=first_name, last_name=last_name, email=email)
-    
+    contacts = await contact_service.get_contacts(skip, limit, first_name, last_name, email)
+
     return contacts
 
 @router.get("/{contact_id}", response_model=ContactResponse)
@@ -53,11 +53,12 @@ async def create_contact(
 
 @router.put("/{contact_id}", response_model=ContactResponse)
 async def update_contact(
+    contact_id: int,
     body: ContactUpdate,
     db: AsyncSession = Depends(get_db)
 ):
     contact_service = ContactService(db)
-    contact = await contact_service.update_contact(body)
+    contact = await contact_service.update_contact(contact_id, body)
     if contact is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found"
